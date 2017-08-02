@@ -38,10 +38,12 @@ public class TileGenerator : MonoBehaviour {
 	bool renewGrid = false;
 
 	void Start () {
+		/*
 		ObjectPool (objectsToBePooled);
 		ShuffleList (tileBank);
 		GenerateTileGrid ();
 		LinkTileGrid ();
+		*/
 	}
 
 	void ObjectPool(int poolSize){
@@ -72,11 +74,12 @@ public class TileGenerator : MonoBehaviour {
 			for (int c = 0; c < cols; c++) {
 				Vector3 tilePos = new Vector3 (c, r, 0);
 				for (int n = 0; n < tileBank.Count; n++) {
-					GameObject o = tileBank [n];
-					if (!o.activeSelf) {
-						o.transform.position = new Vector3 (tilePos.x, tilePos.y, tilePos.z);
-						o.SetActive (true);
-						tiles[c, r] = new Tile (o, o.name);
+					GameObject obj = tileBank [n];
+					if (!obj.activeSelf) {
+						obj.transform.position = new Vector3 (tilePos.x, tilePos.y, tilePos.z);
+						obj.SetActive (true);
+						//assign node for each tile game object created
+						tiles[c, r] = new Tile (obj, obj.name);
 						tiles [c, r].col = c;
 						tiles [c, r].row = r;
 						n = tileBank.Count + 1;
@@ -85,9 +88,11 @@ public class TileGenerator : MonoBehaviour {
 			}
 		}
 	}
+
 	void LinkTileGrid(){
 		for (int r = 0; r < rows; r++) {
 			for (int c = 0; c < cols; c++) {
+				
 				if (c == 0) { 
 					tiles [c, r].topLeftNode = null;
 					tiles [c, r].leftNode = null;
@@ -102,7 +107,6 @@ public class TileGenerator : MonoBehaviour {
 					if (r == rows - 1) {
 						tiles [c, r].topLeftNode = null;
 					} else {
-						Debug.Log(" c "+c+" r "+r);
 						tiles [c, r].topLeftNode = tiles [c - 1, r + 1];
 					}
 				}
@@ -112,21 +116,23 @@ public class TileGenerator : MonoBehaviour {
 					tiles [c, r].rightNode = null;
 					tiles [c, r].BottomRightNode = null;				
 				} else {
-					tiles [c, r].topRightNode = tiles [c + 1, r + 1];
-					tiles [c, r].rightNode = tiles [c+1, r ];
+						tiles [c, r].topRightNode = tiles [c + 1, r + 1];
+						tiles [c, r].rightNode = tiles [c+1, r ];
+					Debug.Log (" C : " + c + " R :" + r+"/col "+tiles [c , r ].col+"/row "+tiles [c , r ].row);
 					if (r == 0) {
 						tiles [c, r].BottomRightNode = null;
 					} else {
 						tiles [c, r].BottomRightNode = tiles [c + 1, r + 1];
 					}
-					
 				}
+
 				if (r == 0) {
 					tiles [c, r].BottomNode = null;
 				} else {
 					tiles [c, r].BottomNode = tiles [c , r-1];
 
 				}
+
 				if (r == rows - 1) {	
 					tiles [c, r].topNode = null;
 				} else {
@@ -140,7 +146,7 @@ public class TileGenerator : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 
-
+		/*
 		if (Input.GetMouseButtonDown (0)) {
 			Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
 			RaycastHit2D hit = Physics2D.GetRayIntersection (ray, 1000);
@@ -177,7 +183,7 @@ public class TileGenerator : MonoBehaviour {
 				tile2.transform.position = tempPos;
 					Debug.Log("Colum "+ tiles [tile1posX, tile1posY].col+"Row "+
 						tiles [tile1posX, tile1posY].row);
-					
+				LinkTileGrid ();
 				tile1 = null;
 				tile2 = null;
 
@@ -185,98 +191,52 @@ public class TileGenerator : MonoBehaviour {
 			}
 		}
 		MatchTile ();
+		*/
 	}
 	void MatchTile(){
-		Debug.Log ("Match Called");
-		int counter = 1;
+	//	int counter = 1;
 		for (int r = 0; r < rows; r++) {
-			counter = 1;
-			for (int c = 1; c < cols; c++) {
-				if (tiles [c, r] != null && tiles [c - 1, r] != null) {
-					if (tiles [c, r].id == tiles [c - 1, r].id) {
-						counter++;
-						if (counter == 3 && (c- 3)>0 && (c+1)<=cols) {
-							if (tiles [c-3, r] != null && tiles [c+1 - 1, r] != null) {
-//								if (tiles [c, r].id == tiles [c - 3, r].id ^ tiles [c, r].id == tiles [c + 1, r].id) {
-//									counter++;
-//									Debug.Log ("Foure colum   match found");
-//								}
-							}
-						}
-				
-					} else
-						counter = 1;
-					
-					if (counter >= 3) {
-						if (tiles [c, r] != null)
-							tiles [c, r].tileObject.SetActive (false);
-						if (tiles [c - 1, r] != null)
-							tiles [c - 1, r].tileObject.SetActive (false);
-						if (tiles [c - 2, r] != null)
-							tiles [c - 2, r].tileObject.SetActive (false);
-						
-						if (counter ==4) {
-							if (tiles [c - 3, r] != null)
-								tiles [c - 3, r].tileObject.SetActive (false);
-							tiles [c - 3, r] = null;
-						}
-
-						tiles [c, r] = null;
-						tiles [c - 1, r] = null;
-						tiles [c - 2, r] = null;
-						//renewBoard = true;
-					}
-				}
-			}//for(colum)
-		}//for(row)
-		//row check
-		for (int c = 0; c < cols; c++){
-			counter=1;
-			for(int r=1;r<rows;r++){
-				if (tiles [c, r] != null && tiles [c , r-1] != null) {
-					if (tiles [c, r].id == tiles [c, r-1].id) {
-						counter++;
-						if (counter ==  3 && (r- 3)>0 && (r+1)<=rows) {
-							if (tiles [c, r - 3] != null && tiles [c, r + 1] != null) {
-								if (tiles [c, r].id == tiles [c, r - 3].id ^ tiles [c, r].id == tiles [c, r + 1].id) {
-									counter++;
-									Debug.Log ("Foure row  match found");
+			for (int c = 0; c < cols; c++) {
+				if(tiles[c,r].rightNode!=null){
+					if (tiles [c, r].id == tiles [c, r].rightNode.id) {
+						if (tiles [c, r].leftNode != null) {
+							if (tiles [c, r].id == tiles [c, r].rightNode.id) {
+								if (tiles [c, r].rightNode.rightNode!=null){
+									if (tiles [c, r].id == tiles [c, r].rightNode.rightNode.id) {
+										tiles [c + 2, r].tileObject.SetActive (false);
+									}
 								}
+								if (tiles [c, r].leftNode.leftNode != null) {
+									if (tiles [c, r].id == tiles [c, r].leftNode.leftNode.id) {
+										tiles [c -2, r].tileObject.SetActive (false);
+									}
+								}
+								tiles [c+1, r].tileObject.SetActive (false);
+								tiles [c, r].tileObject.SetActive (false);
+								tiles [c-1, r].tileObject.SetActive (false);
 							}
 						}
-
-					} else
-						counter = 1;
-					if (counter >= 3) {
-						if (tiles [c, r] != null) 
-							tiles [c, r].tileObject.SetActive (false);
-						if (tiles [c , r-1] != null)
-							tiles [c , r-1].tileObject.SetActive (false);
-						if (tiles [c , r-2] != null)
-							tiles [c , r-2].tileObject.SetActive (false);
-						
-						if (counter == 4) {
-							if (tiles [c, r - 3] != null)
-								tiles [c, r - 3].tileObject.SetActive (false);
-							tiles [c, r-3] = null;
-						}
-
-						tiles [c, r] = null;
-						tiles [c, r-1] = null;
-						tiles [c, r-2] = null;
-
-						renewGrid = true;
 					}
+						
 				}
-			}
-		}
-		if (renewGrid) {
-			RenewGrid ();
-			renewGrid = false;
-			Debug.Log ("True");
-		}
-		//RenewGrid ();
+//					if (tiles [c, r].leftNode != null) {
+//					}
+//					if (tiles [c, r].topNode != null) {
+//					}
+//					if (tiles [c, r].BottomNode != null) {
+//					}
+//					if (tiles [c, r].topLeftNode != null) {
+//					}
+//					if (tiles [c, r].BottomRightNode != null) {
+//					}
+//					if (tiles [c, r].topRightNode != null) {
+//					}
+//					if (tiles [c, r].BottomLeftNode != null) {
+//					}
+			}//for (col)
+		}//for (row)
 	}//MatchTile()
+		
 	void RenewGrid (){
 		bool tileMoved = false;
 		ShuffleList (tileBank);
