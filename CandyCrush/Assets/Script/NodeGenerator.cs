@@ -13,20 +13,26 @@ public class NodeGenerator : MonoBehaviour {
 	public NodePocket pickedPocket1 = null;
 	public NodePocket pickedPocket2 = null;
 
-	public List<NodePocket> tempListForDebug = new List<NodePocket> ();
+//	public List<NodePocket> tempListForDebug = new List<NodePocket> ();
+	public List<NodePocket> northSouthListA = new List<NodePocket> ();
+	public List<NodePocket> eastWestListA = new List<NodePocket> ();
+	public List<NodePocket> northSouthListB = new List<NodePocket> ();
+	public List<NodePocket> eastWestListB = new List<NodePocket> ();
+	public List<NodePocket> destructionList = new List<NodePocket> ();
 
 	void Start() {
 		GeneratePockets (ROWS, COLS);
-		Link (pockets);
+		Link (pockets);	
+		CalculateDebugText (pockets);
 	}
 
 	void GeneratePockets(int row, int col) {
-		Color[] presetColors = {
-			Color.blue
-			, Color.cyan
-			, Color.green
-			, Color.magenta
-			, Color.red
+		Node.TYPE[] presetTypes = {
+			Node.TYPE.NODE_0,
+			Node.TYPE.NODE_1,
+			Node.TYPE.NODE_2,
+			Node.TYPE.NODE_3,
+			Node.TYPE.NODE_4
 		};
 		for (int y = 0; y < row; y++) {
 			for (int x = 0; x < col; x++) {
@@ -40,15 +46,46 @@ public class NodeGenerator : MonoBehaviour {
 				GameObject node = (GameObject)Instantiate(dummyNode);
 				node.transform.SetParent (pocket.transform);
 				node.transform.position = Vector3.zero;
-				int randIndex = Random.Range (0, presetColors.Length);
-				Color clr = presetColors [randIndex];
-				node.GetComponent<Node> ().SetColor (clr);
+				int randIndex = Random.Range (0, presetTypes.Length);
+				node.GetComponent<Node> ().SetNodeType (presetTypes[randIndex]);
 
 				// Pocket positioning
 				// This has to come after we made the node a child. Else the child node won't position properly.
 				pocket.transform.position = new Vector3 (x * bounds.size.x, y * bounds.size.y, 0);
 				pocket.transform.SetParent (pockets.transform);
 			}
+		}
+	}
+
+	void ChangeColor() {
+		foreach(NodePocket p in northSouthListA) {
+			p.GetNode ().SetDebugColor (Color.yellow);
+		}
+		foreach(NodePocket p in eastWestListA) {
+			p.GetNode ().SetDebugColor (Color.yellow);
+		}
+		foreach(NodePocket p in northSouthListB) {
+			p.GetNode ().SetDebugColor (Color.yellow);
+		}
+		foreach(NodePocket p in eastWestListB) {
+			p.GetNode ().SetDebugColor (Color.yellow);
+		}
+	}
+
+	void ChangeColor(List<NodePocket> array, Color clr) {
+		foreach(NodePocket p in array) {
+			p.GetNode ().SetDebugColor (clr);
+		}
+	}
+
+	void CalculateDebugText(GameObject rootPocketNode) {
+		for (int itr = 0; itr < rootPocketNode.transform.childCount; itr++) {
+			int row = itr / COLS;
+			int col = itr % COLS;
+			NodePocket pocket = rootPocketNode.transform.GetChild (itr).GetComponent<NodePocket> ();
+			Node node = pocket.gameObject.GetComponentInChildren<Node> ();
+			GameObject textParent = node.gameObject.transform.GetChild (0).gameObject;
+			textParent.GetComponent<TextMesh> ().text = "" + row + "," + col;
 		}
 	}
 
@@ -72,6 +109,7 @@ public class NodeGenerator : MonoBehaviour {
 				pocket.northWest = rootPocketNode.transform.GetChild ((row+1) * COLS + col - 1).transform.GetComponent<NodePocket> ();
 				pocket.southWest = rootPocketNode.transform.GetChild ((row-1) * COLS + col - 1).transform.GetComponent<NodePocket> ();
 				border = false;
+				//Debug.Log("(row - 1) * COLS + col)"+(row - 1) * COLS + col);
 			}
 
 
@@ -145,37 +183,66 @@ public class NodeGenerator : MonoBehaviour {
 		}
 	}
 
-	void TraverseNode(NodePocket pocket, Color clr, NodePocket.DIRECTION dir, List<NodePocket> result) {
+	void TraverseNode(NodePocket pocket, Node.TYPE type, NodePocket.DIRECTION dir, List<NodePocket> result) {
 		if (pocket == null)
 			return;
-		if (pocket.GetColor () == clr) {
+		if (pocket.GetNode () && pocket.GetNode().GetNodeType() == type) {
 			AddPocket (pocket, result);
-			TraverseNode (pocket.GetPocket(dir), clr, dir, result);
+			TraverseNode (pocket.GetPocket(dir), type, dir, result);
 		}
 	}
 
-	void TraverseNode(NodePocket pocket, Color clr, List<NodePocket> result) {
+	void TraverseNode(NodePocket pocket, Node.TYPE type, List<NodePocket> ns, List<NodePocket> ew) {
 		if (pocket == null)
 			return;
-		if (pocket.GetColor () != clr)
+		if (pocket.GetNode () && pocket.GetNode().GetNodeType() != type)
 			return;
 
-		AddPocket (pocket, result);
+		AddPocket (pocket, ns, true);
+		AddPocket (pocket, ew, true);
 
-		TraverseNode (pocket.GetPocket(NodePocket.DIRECTION.NORTH), clr, NodePocket.DIRECTION.NORTH, result );
-		TraverseNode (pocket.GetPocket(NodePocket.DIRECTION.SOUTH), clr, NodePocket.DIRECTION.SOUTH, result );
-		TraverseNode (pocket.GetPocket(NodePocket.DIRECTION.EAST), clr, NodePocket.DIRECTION.EAST, result );
-		TraverseNode (pocket.GetPocket(NodePocket.DIRECTION.WEST), clr, NodePocket.DIRECTION.WEST, result );
-//		TraverseNode (node.GetNode(Node.NODE_DIRECTION.NORTH_EAST), clr, Node.NODE_DIRECTION.NORTH_EAST, result );
-//		TraverseNode (node.GetNode(Node.NODE_DIRECTION.NORTH_WEST), clr, Node.NODE_DIRECTION.NORTH_WEST, result );
-//		TraverseNode (node.GetNode(Node.NODE_DIRECTION.SOUTH_EAST), clr, Node.NODE_DIRECTION.SOUTH_EAST, result );
-//		TraverseNode (node.GetNode(Node.NODE_DIRECTION.SOUTH_WEST), clr, Node.NODE_DIRECTION.SOUTH_WEST, result );
+		TraverseNode (pocket.GetPocket(NodePocket.DIRECTION.NORTH), type, NodePocket.DIRECTION.NORTH, ns );
+		TraverseNode (pocket.GetPocket(NodePocket.DIRECTION.SOUTH), type, NodePocket.DIRECTION.SOUTH, ns );
+		TraverseNode (pocket.GetPocket(NodePocket.DIRECTION.EAST), type, NodePocket.DIRECTION.EAST, ew );
+		TraverseNode (pocket.GetPocket(NodePocket.DIRECTION.WEST), type, NodePocket.DIRECTION.WEST, ew );
+		Debug.Log ("visitation count"+  pocket.visitationCount);
+
 	}
 
-	void AddPocket(NodePocket pocket, List<NodePocket> result) {
-		if (pocket.visitationCount == 0) {
+	void DestroyNodesFromDestructionList() {
+		foreach (NodePocket p in destructionList) {
+			p.DestroyNode ();
+		}
+	}
+
+	void AddPocket(NodePocket pocket, List<NodePocket> result, bool force = false) {
+		if (pocket.visitationCount == 0 || force) {
 			result.Add (pocket);
+			// Debug.Log ("visitation " + pocket.tileIndex / COLS + ", " + pocket.tileIndex % COLS);
 			pocket.visitationCount++;
+		}
+	}
+
+	void ClearArrays() {
+		northSouthListA.Clear ();
+		eastWestListA.Clear ();
+		northSouthListB.Clear ();
+		eastWestListB.Clear ();
+		destructionList.Clear ();
+	}
+
+	void ClearVisitationFlag() {
+		foreach(NodePocket p in northSouthListA) {
+			p.visitationCount = 0;
+		}
+		foreach(NodePocket p in eastWestListA) {
+			p.visitationCount = 0;
+		}
+		foreach(NodePocket p in northSouthListB) {
+			p.visitationCount = 0;
+		}
+		foreach(NodePocket p in eastWestListB) {
+			p.visitationCount = 0;
 		}
 	}
 
@@ -206,9 +273,46 @@ public class NodeGenerator : MonoBehaviour {
 					Debug.Log ("Swap "+ pickedPocket1.tileIndex + ", "+ pickedPocket2.tileIndex);
 
 					// try traverse and find matches
-					tempListForDebug.Clear();
-					TraverseNode(pickedPocket1, pickedPocket1.GetColor(), tempListForDebug);
-					TraverseNode(pickedPocket2, pickedPocket2.GetColor(), tempListForDebug);
+					ClearArrays();
+					TraverseNode(pickedPocket1, pickedPocket1.GetNode().GetNodeType(), northSouthListA, eastWestListA);
+					ClearVisitationFlag ();
+					TraverseNode(pickedPocket2, pickedPocket2.GetNode().GetNodeType(), northSouthListB, eastWestListB);
+					ClearVisitationFlag ();
+
+					Debug.Log ("northSouthListA " + northSouthListA.Count);
+					Debug.Log ("eastWestListA " + eastWestListA.Count);
+					Debug.Log ("northSouthListB " + northSouthListB.Count);
+					Debug.Log ("eastWestListB " + eastWestListB.Count);
+
+					bool matchFound = false;
+					if (northSouthListA.Count >= 3) {
+						ChangeColor (northSouthListA, Color.yellow);
+						matchFound = true;
+						destructionList.AddRange (northSouthListA);
+					}
+					if (eastWestListA.Count >= 3) {
+						ChangeColor (eastWestListA, Color.yellow);
+						matchFound = true;
+						destructionList.AddRange (eastWestListA);
+					}
+					if (northSouthListB.Count >= 3) {
+						ChangeColor (northSouthListB, Color.yellow);
+						matchFound = true;
+						destructionList.AddRange (northSouthListB);
+					}
+					if (eastWestListB.Count >= 3) {
+						ChangeColor (eastWestListB, Color.yellow);
+						matchFound = true;
+						destructionList.AddRange (eastWestListB);
+					}
+
+					if (!matchFound) {
+						NodePocket.SwapNodes (pickedPocket1, pickedPocket2);
+						Debug.Log ("swap back");
+					} else {
+						// start destruction
+						DestroyNodesFromDestructionList();
+					}
 				} else {
 					pickedPocket1 = null;	// if not adjasent tile then reset the vars.
 					pickedPocket2 = null;

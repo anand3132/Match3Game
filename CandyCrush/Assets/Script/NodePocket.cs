@@ -108,4 +108,8 @@ public class NodePocket : MonoBehaviour {
 		node1.gameObject.transform.SetParent (b.transform);
 		node1.transform.localPosition = Vector3.zero;
 	}
+
+	public void DestroyNode() {
+		
+	}
 }
