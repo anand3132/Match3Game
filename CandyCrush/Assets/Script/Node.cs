@@ -21,6 +21,7 @@ public class Node : MonoBehaviour {
 		, Color.red
 	};
 	public TYPE nodeType;
+
 	public void SetNodeType(TYPE type) {
 		nodeType = type;
 		SetColor (presetColors [(int)nodeType]);

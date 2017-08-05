@@ -110,6 +110,10 @@ public class NodePocket : MonoBehaviour {
 	}
 
 	public void DestroyNode() {
-		
+		gameObject.SetActive (false);
+	}
+
+	public bool IsActiveNode() {
+		return gameObject.activeInHierarchy;
 	}
 }

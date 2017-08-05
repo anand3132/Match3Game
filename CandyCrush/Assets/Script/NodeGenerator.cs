@@ -9,7 +9,7 @@ public class NodeGenerator : MonoBehaviour {
 	public GameObject pockets;
 	public const int ROWS = 8;
 	public const int COLS = 8;
-
+	public int regenerateCount=0;
 	public NodePocket pickedPocket1 = null;
 	public NodePocket pickedPocket2 = null;
 
@@ -19,21 +19,25 @@ public class NodeGenerator : MonoBehaviour {
 	public List<NodePocket> northSouthListB = new List<NodePocket> ();
 	public List<NodePocket> eastWestListB = new List<NodePocket> ();
 	public List<NodePocket> destructionList = new List<NodePocket> ();
+	public List<NodePocket> dropAnimationList = new List<NodePocket> ();
+
+	Node.TYPE[] presetTypes = {
+		Node.TYPE.NODE_0,
+		Node.TYPE.NODE_1,
+		Node.TYPE.NODE_2,
+		Node.TYPE.NODE_3,
+		Node.TYPE.NODE_4
+	};
 
 	void Start() {
 		GeneratePockets (ROWS, COLS);
 		Link (pockets);	
 		CalculateDebugText (pockets);
+		// TraverseGrid (pockets);
 	}
 
 	void GeneratePockets(int row, int col) {
-		Node.TYPE[] presetTypes = {
-			Node.TYPE.NODE_0,
-			Node.TYPE.NODE_1,
-			Node.TYPE.NODE_2,
-			Node.TYPE.NODE_3,
-			Node.TYPE.NODE_4
-		};
+
 		for (int y = 0; y < row; y++) {
 			for (int x = 0; x < col; x++) {
 				// Pocket creation
@@ -111,7 +115,6 @@ public class NodeGenerator : MonoBehaviour {
 				border = false;
 				//Debug.Log("(row - 1) * COLS + col)"+(row - 1) * COLS + col);
 			}
-
 
 			// left bottom
 			if (row == 0 && col == 0) {
@@ -205,14 +208,8 @@ public class NodeGenerator : MonoBehaviour {
 		TraverseNode (pocket.GetPocket(NodePocket.DIRECTION.SOUTH), type, NodePocket.DIRECTION.SOUTH, ns );
 		TraverseNode (pocket.GetPocket(NodePocket.DIRECTION.EAST), type, NodePocket.DIRECTION.EAST, ew );
 		TraverseNode (pocket.GetPocket(NodePocket.DIRECTION.WEST), type, NodePocket.DIRECTION.WEST, ew );
-		Debug.Log ("visitation count"+  pocket.visitationCount);
+//		Debug.Log ("visitation count"+  pocket.visitationCount);
 
-	}
-
-	void DestroyNodesFromDestructionList() {
-		foreach (NodePocket p in destructionList) {
-			p.DestroyNode ();
-		}
 	}
 
 	void AddPocket(NodePocket pocket, List<NodePocket> result, bool force = false) {
@@ -223,12 +220,103 @@ public class NodeGenerator : MonoBehaviour {
 		}
 	}
 
+	void TraverseGrid(GameObject rootPocketNode){
+		for (int itr = 0; itr < rootPocketNode.transform.childCount; itr++) {
+			NodePocket pocket = rootPocketNode.transform.GetChild (itr).GetComponent<NodePocket> ();
+			ClearArrays();
+			TraverseNode(pocket, pocket.GetNode().GetNodeType(), northSouthListA, eastWestListA);
+			ClearVisitationFlag ();
+			if (!isMatchFound()) {
+				//Debug.Log ("Match Not found!!");
+			} else {
+				DestroyNodesFromDestructionList();
+				//fall animation 
+				//move north pocket to (itr)position;
+				//regenarate destroyed object on top
+			}
+		}
+	}
+
+	void TryDropDown(NodePocket northNodePocket){
+		NodePocket southNodePocket = northNodePocket.south;
+		bool foundAtleastOneDestroyedNode = false;
+		Vector3 bottomPosToDrop = new Vector3 ();
+		while (southNodePocket) {
+			if (!southNodePocket.IsActiveNode ()) {
+				foundAtleastOneDestroyedNode = true;
+			}
+
+			if (foundAtleastOneDestroyedNode && southNodePocket.IsActiveNode ()) {
+				bottomPosToDrop = southNodePocket.transform.position;
+				bottomPosToDrop.y += northNodePocket.gameObject.GetComponent<BoxCollider2D> ().bounds.size.y;
+				break;
+			}
+			southNodePocket = southNodePocket.south;
+		}
+
+//		if (southNodePocket == null) {
+//			bottomPosToDrop = new Vector3 (northNodePocket.transform.position.x, 0, northNodePocket.transform.position.z);
+//		}
+
+		float yPos = bottomPosToDrop.y;
+		while (northNodePocket) {
+			if (!IsExistInList (northNodePocket, dropAnimationList)) {
+				dropAnimationList.Add (northNodePocket);
+				//northNodePocket.SetColor (Color.white);
+//				iTween.MoveTo (northNodePocket.GetNode ().gameObject, new Vector3(bottomPosToDrop.x, bottomPosToDrop.y, bottomPosToDrop.z), 3.0f);
+				iTween.MoveTo(northNodePocket.GetNode ().gameObject, 
+					iTween.Hash(
+						"y", yPos,
+						"time", 3.0f,
+						"oncomplete", "CallbackDropDownAnimComplete",
+						"onCompleteParams", northNodePocket,
+						"oncompletetarget", this.gameObject
+					));
+				yPos += northNodePocket.gameObject.GetComponent<BoxCollider2D> ().bounds.size.y;
+			}
+			northNodePocket = northNodePocket.north;
+		}
+		Link (pockets);
+	}
+
+	public void CallbackDropDownAnimComplete(NodePocket pocket) {
+		Debug.Log ("drop down finished");
+	}
+
+	bool IsExistInList(NodePocket node, List<NodePocket> list) {
+		foreach(NodePocket p in list) {
+			if (p == node) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void DestroyNodesFromDestructionList() {
+		regenerateCount = destructionList.Count;
+		foreach (NodePocket p in destructionList) {
+			p.DestroyNode ();
+		}
+		foreach (NodePocket p in destructionList) {
+			NodePocket northNodePocket = p.north;
+			while (northNodePocket) {
+				if (!IsExistInList (northNodePocket, destructionList)) {
+					TryDropDown (p.north);
+					Debug.Log ("Try drop");
+					break;
+				}
+				northNodePocket = northNodePocket.north;
+			}
+		}
+	}
+
 	void ClearArrays() {
 		northSouthListA.Clear ();
 		eastWestListA.Clear ();
 		northSouthListB.Clear ();
 		eastWestListB.Clear ();
 		destructionList.Clear ();
+		dropAnimationList.Clear ();
 	}
 
 	void ClearVisitationFlag() {
@@ -244,6 +332,31 @@ public class NodeGenerator : MonoBehaviour {
 		foreach(NodePocket p in eastWestListB) {
 			p.visitationCount = 0;
 		}
+	}
+
+	bool isMatchFound(){
+		bool MatchFound = false;
+		if (northSouthListA.Count >= 3) {
+			ChangeColor (northSouthListA, Color.yellow);
+			destructionList.AddRange (northSouthListA);
+			MatchFound= true;
+		}
+		if (eastWestListA.Count >= 3) {
+			ChangeColor (eastWestListA, Color.yellow);
+			destructionList.AddRange (eastWestListA);
+			MatchFound= true;
+		}
+		if (northSouthListB.Count >= 3) {
+			ChangeColor (northSouthListB, Color.yellow);
+			destructionList.AddRange (northSouthListB);
+			MatchFound= true;
+		}
+		if (eastWestListB.Count >= 3) {
+			ChangeColor (eastWestListB, Color.yellow);
+			destructionList.AddRange (eastWestListB);
+			MatchFound= true;
+		}
+		return MatchFound;
 	}
 
 	void Update() {
@@ -270,7 +383,6 @@ public class NodeGenerator : MonoBehaviour {
 
 					// try swap
 					NodePocket.SwapNodes(pickedPocket1, pickedPocket2);
-					Debug.Log ("Swap "+ pickedPocket1.tileIndex + ", "+ pickedPocket2.tileIndex);
 
 					// try traverse and find matches
 					ClearArrays();
@@ -279,36 +391,9 @@ public class NodeGenerator : MonoBehaviour {
 					TraverseNode(pickedPocket2, pickedPocket2.GetNode().GetNodeType(), northSouthListB, eastWestListB);
 					ClearVisitationFlag ();
 
-					Debug.Log ("northSouthListA " + northSouthListA.Count);
-					Debug.Log ("eastWestListA " + eastWestListA.Count);
-					Debug.Log ("northSouthListB " + northSouthListB.Count);
-					Debug.Log ("eastWestListB " + eastWestListB.Count);
-
-					bool matchFound = false;
-					if (northSouthListA.Count >= 3) {
-						ChangeColor (northSouthListA, Color.yellow);
-						matchFound = true;
-						destructionList.AddRange (northSouthListA);
-					}
-					if (eastWestListA.Count >= 3) {
-						ChangeColor (eastWestListA, Color.yellow);
-						matchFound = true;
-						destructionList.AddRange (eastWestListA);
-					}
-					if (northSouthListB.Count >= 3) {
-						ChangeColor (northSouthListB, Color.yellow);
-						matchFound = true;
-						destructionList.AddRange (northSouthListB);
-					}
-					if (eastWestListB.Count >= 3) {
-						ChangeColor (eastWestListB, Color.yellow);
-						matchFound = true;
-						destructionList.AddRange (eastWestListB);
-					}
-
-					if (!matchFound) {
+					if (!isMatchFound()) {
 						NodePocket.SwapNodes (pickedPocket1, pickedPocket2);
-						Debug.Log ("swap back");
+						Debug.Log("No Match Found Swap Back"); 
 					} else {
 						// start destruction
 						DestroyNodesFromDestructionList();

@@ -1,9 +1,19 @@
 ﻿<Properties StartupItem="Assembly-CSharp.csproj">
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.Instance.Unity Editor" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Script/TileGenerator.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Script/NodeGenerator.cs">
     <Files>
-      <File FileName="Assets/Script/TileGenerator.cs" Line="174" Column="26" />
+      <File FileName="Assets/Script/NodePocket.cs" Line="111" Column="2" />
+      <File FileName="Assets/Script/NodeGenerator.cs" Line="256" Column="19" />
+      <File FileName="Assets/Script/Node.cs" Line="16" Column="8" />
+      <File FileName="Assets/Script/UIController.cs" Line="24" Column="1" />
     </Files>
+    <Pads>
+      <Pad Id="MonoDevelop.NUnit.TestPad">
+        <State name="__root__">
+          <Node name="CandyCrush" expanded="True" selected="True" />
+        </State>
+      </Pad>
+    </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
