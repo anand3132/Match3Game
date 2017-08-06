@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class NodePocket : MonoBehaviour {
 	public NodePocket west;
@@ -111,6 +112,17 @@ public class NodePocket : MonoBehaviour {
 		if (!dontChangeTransform) {
 			node1.transform.localPosition = Vector3.zero;
 		}
+
+		a.CalculateDebugText ();
+		b.CalculateDebugText ();
+	}
+
+	public void CalculateDebugText() {
+		int row = tileIndex / NodeGenerator.COLS;
+		int col = tileIndex % NodeGenerator.COLS;
+		Node node = gameObject.GetComponentInChildren<Node> ();
+		GameObject textParent = node.gameObject.transform.GetChild (0).gameObject;
+		textParent.GetComponent<TextMeshPro> ().text = "" + row + "," + col;
 	}
 
 	public void DestroyNode() {

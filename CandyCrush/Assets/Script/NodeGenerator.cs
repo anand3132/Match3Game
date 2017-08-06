@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class NodeGenerator : MonoBehaviour {
 	public GameObject dummyNode;
@@ -114,12 +115,13 @@ public class NodeGenerator : MonoBehaviour {
 
 	void CalculateDebugText(GameObject rootPocketNode) {
 		for (int itr = 0; itr < rootPocketNode.transform.childCount; itr++) {
-			int row = itr / COLS;
-			int col = itr % COLS;
+//			int row = itr / COLS;
+//			int col = itr % COLS;
 			NodePocket pocket = rootPocketNode.transform.GetChild (itr).GetComponent<NodePocket> ();
-			Node node = pocket.gameObject.GetComponentInChildren<Node> ();
-			GameObject textParent = node.gameObject.transform.GetChild (0).gameObject;
-			textParent.GetComponent<TextMesh> ().text = "" + row + "," + col;
+			pocket.CalculateDebugText ();
+//			Node node = pocket.gameObject.GetComponentInChildren<Node> ();
+//			GameObject textParent = node.gameObject.transform.GetChild (0).gameObject;
+//			textParent.GetComponent<TextMeshPro> ().text = "" + row + "," + col;
 		}
 	}
 
@@ -228,7 +230,7 @@ public class NodeGenerator : MonoBehaviour {
 	void TraverseNode(NodePocket pocket, Node.TYPE type, List<NodePocket> ns, List<NodePocket> ew) {
 		if (pocket == null)
 			return;
-		if (pocket.GetNode () && pocket.GetNode().GetNodeType() != type)
+		if (pocket.GetNode () && (pocket.GetNode().GetNodeType() != type || pocket.GetNode ().GetState () != Node.STATE.ACTIVE))
 			return;
 
 		AddPocket (pocket, ns, true);
@@ -275,13 +277,13 @@ public class NodeGenerator : MonoBehaviour {
 			NodePocket.SwapNodes (list [0], list [1]);
 			if (dropAnimationList.Count == 0) {
 				int nDestruction = 0;
-				ClearArrays ();
 				NodePocket [] nodePockets = pockets.GetComponentsInChildren <NodePocket> ();
 				foreach (NodePocket p in nodePockets) {
 					// try traverse and find matches
 					if (p.GetNode ().GetState () != Node.STATE.ACTIVE) {
 						continue;
 					}
+					ClearArrays ();
 					TraverseNode (p, p.GetNode ().GetNodeType (), northSouthListA, eastWestListA);
 					ClearVisitationFlag ();
 					if (isMatchFound ()) {
@@ -358,7 +360,7 @@ public class NodeGenerator : MonoBehaviour {
 						"onCompleteParams", list,
 						"oncompletetarget", this.gameObject
 					));
-				Debug.Log ("dropping : y pos "+yPos + " pocket "+northNodePocket.ToString ());
+//				Debug.Log ("dropping : y pos "+yPos + " pocket "+northNodePocket.ToString ());
 				yPos += northNodePocket.gameObject.GetComponent<BoxCollider2D> ().bounds.size.y;
 			}
 			southTip = southTip.north;
@@ -367,9 +369,10 @@ public class NodeGenerator : MonoBehaviour {
 	}
 
 	void DestroyNodesFromDestructionList() {
+		Debug.Log ("----------------------------------");
 		regenerateCount = destructionList.Count;
 		foreach (NodePocket p in destructionList) {
-			// Debug.Log ("drop "+p.ToString ());
+			 Debug.Log ("drop "+p.ToString ());
 			p.DestroyNode ();
 		}
 		foreach (NodePocket p2 in destructionList) {
@@ -378,7 +381,7 @@ public class NodeGenerator : MonoBehaviour {
 			while (northNodePocket) {
 				bool found = IsExistInList (northNodePocket, destructionList);
 				if (found == false) {
-					Debug.Log ("Try drop "+northNodePocket.ToString ());
+//					Debug.Log ("Try drop "+northNodePocket.ToString ());
 					TryDropDown (northNodePocket);
 					break;
 				}
