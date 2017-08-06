@@ -13,6 +13,12 @@ public class Node : MonoBehaviour {
 		NODE_MAX
 	}
 
+	public enum STATE {
+		ACTIVE,
+		DESTROYED,
+		STATE_MAX
+	}
+
 	public static Color[] presetColors = {
 		Color.blue
 		, Color.cyan
@@ -21,6 +27,7 @@ public class Node : MonoBehaviour {
 		, Color.red
 	};
 	public TYPE nodeType;
+	private STATE nodeState;
 
 	public void SetNodeType(TYPE type) {
 		nodeType = type;
@@ -40,6 +47,36 @@ public class Node : MonoBehaviour {
 
 	public void SetDebugColor(Color clr) {
 		SetColor (clr);
+	}
+
+	public void SetState(STATE state) {
+		nodeState = state;
+
+		SpriteRenderer renderer = GetComponent<SpriteRenderer> ();
+		switch (nodeState) {
+		case STATE.ACTIVE: {
+				if (renderer) {
+					renderer.color = new Color(renderer.color.r,
+						renderer.color.g,
+						renderer.color.b,
+						1.0f);
+				}
+				break;
+			}
+		case STATE.DESTROYED: {
+				if (renderer) {
+					renderer.color = new Color(renderer.color.r,
+						renderer.color.g,
+						renderer.color.b,
+						0.0f);
+				}
+				break;
+			}
+		}
+	}
+
+	public STATE GetState() {
+		return nodeState;
 	}
 
 //	public Color GetColor() {

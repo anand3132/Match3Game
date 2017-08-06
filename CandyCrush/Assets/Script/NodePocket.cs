@@ -100,20 +100,30 @@ public class NodePocket : MonoBehaviour {
 		return null;
 	}
 
-	public static void SwapNodes(NodePocket a, NodePocket b) {
+	public static void SwapNodes(NodePocket a, NodePocket b, bool dontChangeTransform = false) {
 		Node node1 = a.GetNode();
 		Node node2 = b.GetNode ();
 		node2.gameObject.transform.SetParent (a.transform);
-		node2.transform.localPosition = Vector3.zero;
+		if (!dontChangeTransform) {
+			node2.transform.localPosition = Vector3.zero;
+		}
 		node1.gameObject.transform.SetParent (b.transform);
-		node1.transform.localPosition = Vector3.zero;
+		if (!dontChangeTransform) {
+			node1.transform.localPosition = Vector3.zero;
+		}
 	}
 
 	public void DestroyNode() {
-		gameObject.SetActive (false);
+		if (GetNode () == null) {
+			Debug.Log ("Error at"+ tileIndex/NodeGenerator.COLS + ", "+ tileIndex%NodeGenerator.COLS );
+		}
+		GetNode().SetState (Node.STATE.DESTROYED);
 	}
 
+	public override string ToString () {
+		return "r : " + tileIndex / NodeGenerator.COLS + ", c : " + tileIndex % NodeGenerator.COLS + " id : " + tileIndex;
+	}
 	public bool IsActiveNode() {
-		return gameObject.activeInHierarchy;
+		return GetNode().GetState () == Node.STATE.ACTIVE;
 	}
 }

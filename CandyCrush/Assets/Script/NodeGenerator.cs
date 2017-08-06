@@ -36,8 +36,37 @@ public class NodeGenerator : MonoBehaviour {
 		// TraverseGrid (pockets);
 	}
 
-	void GeneratePockets(int row, int col) {
+	public void Reset() {
+		Node [] nodes = pockets.GetComponentsInChildren <Node> ();
+		foreach (Node n in nodes) {
+			n.transform.SetParent (null);
+			GameObject.DestroyImmediate (n.gameObject);
+		}
+		GenerateNodes ();
+		CalculateDebugText (pockets);
+	}
 
+	void GenerateNodes() {
+		NodePocket [] nodePockets = pockets.GetComponentsInChildren <NodePocket> ();
+		foreach(NodePocket p in nodePockets) {
+			Vector3 oldPos = p.transform.position;
+			p.transform.position = Vector3.zero;	// This is a must else the child node won't position properly.
+
+			// Node creation
+			GameObject node = (GameObject)Instantiate(dummyNode);
+			node.transform.SetParent (p.transform);
+			node.transform.position = Vector3.zero;
+			int randIndex = Random.Range (0, presetTypes.Length);
+			node.GetComponent<Node> ().SetState (Node.STATE.ACTIVE);
+			node.GetComponent<Node> ().SetNodeType (presetTypes[randIndex]);
+
+			// Pocket positioning
+			// This has to come after we made the node a child. Else the child node won't position properly.
+			p.transform.position = oldPos;
+		}
+	}
+
+	void GeneratePockets(int row, int col) {
 		for (int y = 0; y < row; y++) {
 			for (int x = 0; x < col; x++) {
 				// Pocket creation
@@ -51,6 +80,7 @@ public class NodeGenerator : MonoBehaviour {
 				node.transform.SetParent (pocket.transform);
 				node.transform.position = Vector3.zero;
 				int randIndex = Random.Range (0, presetTypes.Length);
+				node.GetComponent<Node> ().SetState (Node.STATE.ACTIVE);
 				node.GetComponent<Node> ().SetNodeType (presetTypes[randIndex]);
 
 				// Pocket positioning
@@ -237,6 +267,56 @@ public class NodeGenerator : MonoBehaviour {
 		}
 	}
 
+	public void CallbackDropDownAnimComplete(object pocket) {
+		//Debug.Log ("drop down finished");
+		List<NodePocket> list = (List<NodePocket>)pocket;
+		if (list.Count == 2) {
+			dropAnimationList.Remove (list[0]);
+			NodePocket.SwapNodes (list [0], list [1]);
+			if (dropAnimationList.Count == 0) {
+				int nDestruction = 0;
+				ClearArrays ();
+				NodePocket [] nodePockets = pockets.GetComponentsInChildren <NodePocket> ();
+				foreach (NodePocket p in nodePockets) {
+					// try traverse and find matches
+					if (p.GetNode ().GetState () != Node.STATE.ACTIVE) {
+						continue;
+					}
+					TraverseNode (p, p.GetNode ().GetNodeType (), northSouthListA, eastWestListA);
+					ClearVisitationFlag ();
+					if (isMatchFound ()) {
+						// start destruction
+						DestroyNodesFromDestructionList ();
+						nDestruction++;
+						break;
+					}
+				}
+
+				if (nDestruction == 0) {
+					// allow mouse input.
+				}
+				//
+			}
+		}
+	}
+
+	bool IsExistInList(NodePocket node, List<NodePocket> list) {
+		foreach(NodePocket p in list) {
+			if (p.tileIndex == node.tileIndex) {
+				//Debug.Log ("Found "+p.ToString ());
+				return true;
+			}
+		}
+		return false;
+	}
+
+	NodePocket GetSouthTip(NodePocket northNodePocket) {
+		while(northNodePocket.south != null) {
+			northNodePocket = northNodePocket.south;
+		}
+		return northNodePocket;
+	}
+		
 	void TryDropDown(NodePocket northNodePocket){
 		NodePocket southNodePocket = northNodePocket.south;
 		bool foundAtleastOneDestroyedNode = false;
@@ -249,60 +329,57 @@ public class NodeGenerator : MonoBehaviour {
 			if (foundAtleastOneDestroyedNode && southNodePocket.IsActiveNode ()) {
 				bottomPosToDrop = southNodePocket.transform.position;
 				bottomPosToDrop.y += northNodePocket.gameObject.GetComponent<BoxCollider2D> ().bounds.size.y;
+				// southNodePocket.SetColor (Color.white);
 				break;
 			}
 			southNodePocket = southNodePocket.south;
 		}
 
-//		if (southNodePocket == null) {
-//			bottomPosToDrop = new Vector3 (northNodePocket.transform.position.x, 0, northNodePocket.transform.position.z);
-//		}
+		NodePocket southTip = null;
+		if (southNodePocket) {
+			southTip = (southNodePocket.north) ? southNodePocket.north : GetSouthTip (northNodePocket);
+		} else {
+			southTip = GetSouthTip (northNodePocket);
+		}
 
 		float yPos = bottomPosToDrop.y;
 		while (northNodePocket) {
 			if (!IsExistInList (northNodePocket, dropAnimationList)) {
 				dropAnimationList.Add (northNodePocket);
 				//northNodePocket.SetColor (Color.white);
-//				iTween.MoveTo (northNodePocket.GetNode ().gameObject, new Vector3(bottomPosToDrop.x, bottomPosToDrop.y, bottomPosToDrop.z), 3.0f);
+				List<NodePocket> list = new List<NodePocket>();
+				list.Add (northNodePocket);
+				list.Add (southTip);
 				iTween.MoveTo(northNodePocket.GetNode ().gameObject, 
 					iTween.Hash(
 						"y", yPos,
-						"time", 3.0f,
+						"time", 1.0f,
 						"oncomplete", "CallbackDropDownAnimComplete",
-						"onCompleteParams", northNodePocket,
+						"onCompleteParams", list,
 						"oncompletetarget", this.gameObject
 					));
+				Debug.Log ("dropping : y pos "+yPos + " pocket "+northNodePocket.ToString ());
 				yPos += northNodePocket.gameObject.GetComponent<BoxCollider2D> ().bounds.size.y;
 			}
+			southTip = southTip.north;
 			northNodePocket = northNodePocket.north;
 		}
-		Link (pockets);
-	}
-
-	public void CallbackDropDownAnimComplete(NodePocket pocket) {
-		Debug.Log ("drop down finished");
-	}
-
-	bool IsExistInList(NodePocket node, List<NodePocket> list) {
-		foreach(NodePocket p in list) {
-			if (p == node) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	void DestroyNodesFromDestructionList() {
 		regenerateCount = destructionList.Count;
 		foreach (NodePocket p in destructionList) {
+			// Debug.Log ("drop "+p.ToString ());
 			p.DestroyNode ();
 		}
-		foreach (NodePocket p in destructionList) {
-			NodePocket northNodePocket = p.north;
+		foreach (NodePocket p2 in destructionList) {
+			// checksouth (p);
+			NodePocket northNodePocket = p2.north;
 			while (northNodePocket) {
-				if (!IsExistInList (northNodePocket, destructionList)) {
-					TryDropDown (p.north);
-					Debug.Log ("Try drop");
+				bool found = IsExistInList (northNodePocket, destructionList);
+				if (found == false) {
+					Debug.Log ("Try drop "+northNodePocket.ToString ());
+					TryDropDown (northNodePocket);
 					break;
 				}
 				northNodePocket = northNodePocket.north;
