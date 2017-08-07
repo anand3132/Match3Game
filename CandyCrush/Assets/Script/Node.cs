@@ -45,6 +45,10 @@ public class Node : MonoBehaviour {
 		}
 	}
 
+	public SpriteRenderer GetSpriteRenderer() {
+		return GetComponent<SpriteRenderer> ();
+	}
+
 	public void SetDebugColor(Color clr) {
 		SetColor (clr);
 	}
