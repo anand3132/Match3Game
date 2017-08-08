@@ -73,6 +73,7 @@ public class Node : MonoBehaviour {
 						renderer.color.g,
 						renderer.color.b,
 						0.0f);
+					//SetNodeType (TYPE.NODE_MAX);
 				}
 				break;
 			}

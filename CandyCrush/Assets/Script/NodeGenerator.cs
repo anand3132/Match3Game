@@ -290,6 +290,8 @@ public class NodeGenerator : MonoBehaviour {
 			ClearVisitationFlag ();
 			if (isMatchFound ()) {
 				// start destruction
+				BlinkNodes (destructionList);
+
 				DestroyNodesFromDestructionList ();
 				nDestruction++;
 				break;
@@ -355,11 +357,11 @@ public class NodeGenerator : MonoBehaviour {
 		NodePocket southNodePocket = northNodePocket.south;
 		bool foundAtleastOneDestroyedNode = false;
 		Vector3 bottomPosToDrop = new Vector3 ();
+
 		while (southNodePocket) {
 			if (!southNodePocket.IsActiveNode ()) {
 				foundAtleastOneDestroyedNode = true;
 			}
-
 			if (foundAtleastOneDestroyedNode && southNodePocket.IsActiveNode ()) {
 				bottomPosToDrop = southNodePocket.transform.position;
 				bottomPosToDrop.y += northNodePocket.gameObject.GetComponent<BoxCollider2D> ().bounds.size.y;
@@ -392,7 +394,7 @@ public class NodeGenerator : MonoBehaviour {
 						"onCompleteParams", list,
 						"oncompletetarget", this.gameObject
 					));
-//				Debug.Log ("dropping : y pos "+yPos + " pocket "+northNodePocket.ToString ());
+				//Debug.Log ("dropping : y pos "+yPos + " pocket "+northNodePocket.ToString ());
 				yPos += northNodePocket.gameObject.GetComponent<BoxCollider2D> ().bounds.size.y;
 			}
 			southTip = southTip.north;
@@ -505,7 +507,7 @@ public class NodeGenerator : MonoBehaviour {
 			if (hit) {
 				GameObject pickedObject = hit.collider.gameObject;
 				NodePocket pocket = pickedObject.GetComponent<NodePocket> ();
-				if (pocket) {
+				if (pocket && pocket.GetNode ().GetState ()==Node.STATE.ACTIVE) {
 					pickedPocket1 = pocket;
 				}
 			}
@@ -515,7 +517,7 @@ public class NodeGenerator : MonoBehaviour {
 			if (hit) {
 				GameObject pickedObject = hit.collider.gameObject;
 				NodePocket pocket = pickedObject.GetComponent<NodePocket> ();
-				if (pocket && pickedPocket1.IsAdjasentPocket (pocket)) {	// If the second tile is adjasent tile
+				if (pocket && pickedPocket1.IsAdjasentPocket (pocket)&& pocket.GetNode ().GetState ()==Node.STATE.ACTIVE) {	// If the second tile is adjasent tile
 					pickedPocket2 = pocket;
 
 					// try swap
