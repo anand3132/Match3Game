@@ -52,7 +52,10 @@ public class Node : MonoBehaviour {
 	public void SetDebugColor(Color clr) {
 		SetColor (clr);
 	}
-
+	public Vector3 getDebugPosition(){
+		Vector3 pos = transform.position;
+		return pos;
+	}
 	public void SetState(STATE state) {
 		nodeState = state;
 

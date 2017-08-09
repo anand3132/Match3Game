@@ -2,21 +2,16 @@
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.Instance.Unity Editor" />
   <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Script/NodeGenerator.cs">
     <Files>
-      <File FileName="Assets/Script/NodePocket.cs" Line="111" Column="2" />
-      <File FileName="Assets/Script/NodeGenerator.cs" Line="256" Column="19" />
-      <File FileName="Assets/Script/Node.cs" Line="16" Column="8" />
+      <File FileName="Assets/Script/Node.cs" Line="98" Column="1" />
+      <File FileName="Assets/Script/NodePocket.cs" Line="128" Column="25" />
+      <File FileName="Assets/Script/NodeGenerator.cs" Line="242" Column="95" />
       <File FileName="Assets/Script/UIController.cs" Line="24" Column="1" />
     </Files>
-    <Pads>
-      <Pad Id="MonoDevelop.NUnit.TestPad">
-        <State name="__root__">
-          <Node name="CandyCrush" expanded="True" selected="True" />
-        </State>
-      </Pad>
-    </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore />
+    <BreakpointStore>
+      <Breakpoint file="/Users/arun/Anand/1Localrep/1Live/candycrashsaga/CandyCrush/Assets/Script/NodeGenerator.cs" line="529" column="18" />
+    </BreakpointStore>
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
 </Properties>

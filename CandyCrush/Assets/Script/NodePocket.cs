@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-public class NodePocket : MonoBehaviour {
+public class NodePocket : MonoBehaviour
+{
 	public NodePocket west;
 	public NodePocket east;
 	public NodePocket north;
@@ -15,7 +16,8 @@ public class NodePocket : MonoBehaviour {
 	public int tileIndex;
 	public int visitationCount = 0;
 
-	public enum DIRECTION {
+	public enum DIRECTION
+	{
 		NORTH,
 		SOUTH,
 		EAST,
@@ -27,13 +29,15 @@ public class NodePocket : MonoBehaviour {
 		DIRECTION_MAX
 	}
 
-	public Node GetNode() {
-		return transform.GetComponentInChildren<Node>();
+	public Node GetNode ()
+	{
+		return transform.GetComponentInChildren<Node> ();
 	}
 
-	public void SetColor(Color clr) {
+	public void SetColor (Color clr)
+	{
 		// if node present color the node else color the pocket
-		Node node = transform.GetComponentInChildren<Node>();
+		Node node = transform.GetComponentInChildren<Node> ();
 		if (node) {
 			SpriteRenderer renderer = node.GetComponent<SpriteRenderer> ();
 			if (renderer) {
@@ -47,40 +51,43 @@ public class NodePocket : MonoBehaviour {
 		}
 	}
 
-	public Color GetColor() {
+	public Color GetColor ()
+	{
 		// if node present, get the color of node else get the color of pocket
-		Node node = transform.GetComponentInChildren<Node>();
+		Node node = transform.GetComponentInChildren<Node> ();
 		if (node) {
 			SpriteRenderer renderer = node.GetComponent<SpriteRenderer> ();
 			if (renderer) {
 				return renderer.material.color;
 			}
 		} else {
-			SpriteRenderer renderer = GetComponent<SpriteRenderer> ();
+			SpriteRenderer renderer = transform.GetComponent<SpriteRenderer> ();
 			if (renderer) {
 				return renderer.material.color;
 			}
 		}
 		return Color.white;
 	}
-		
-	public bool IsAdjasentPocket(NodePocket pocket) {
+
+	public bool IsAdjasentPocket (NodePocket pocket)
+	{
 		if (pocket == null)
 			return false;
 
-		return (pocket == west ||
-				pocket == east ||
-				pocket == north ||
-				pocket == south ||
-				pocket == northEast ||
-				pocket == northWest ||
-				pocket == southEast ||
-				pocket == southWest
+		return (pocket == west
+		|| pocket == east
+		|| pocket == north
+		|| pocket == south 
+//				||pocket == northEast 
+//				||pocket == northWest 
+//				||pocket == southEast 
+//				||pocket == southWest
 		);
 	}
 
-	public NodePocket GetPocket(DIRECTION dir) {
-		if (dir == DIRECTION.NORTH) {
+	public NodePocket GetPocket (DIRECTION dir)
+	{
+		if (dir == DIRECTION.NORTH && IsActiveNode ()) {
 			return north;
 		} else if (dir == DIRECTION.SOUTH) {
 			return south;
@@ -101,8 +108,9 @@ public class NodePocket : MonoBehaviour {
 		return null;
 	}
 
-	public static void SwapNodes(NodePocket a, NodePocket b, bool dontChangeTransform = false) {
-		Node node1 = a.GetNode();
+	public static void SwapNodes (NodePocket a, NodePocket b, bool dontChangeTransform = false)
+	{
+		Node node1 = a.GetNode ();
 		Node node2 = b.GetNode ();
 		node2.gameObject.transform.SetParent (a.transform);
 		if (!dontChangeTransform) {
@@ -117,7 +125,8 @@ public class NodePocket : MonoBehaviour {
 		b.CalculateDebugText ();
 	}
 
-	public void CalculateDebugText() {
+	public void CalculateDebugText ()
+	{
 		int row = tileIndex / NodeGenerator.COLS;
 		int col = tileIndex % NodeGenerator.COLS;
 		Node node = gameObject.GetComponentInChildren<Node> ();
@@ -125,17 +134,21 @@ public class NodePocket : MonoBehaviour {
 		textParent.GetComponent<TextMeshPro> ().text = "" + row + "," + col;
 	}
 
-	public void DestroyNode() {
+	public void DestroyNode ()
+	{
 		if (GetNode () == null) {
-			Debug.Log ("Error at"+ tileIndex/NodeGenerator.COLS + ", "+ tileIndex%NodeGenerator.COLS );
+			Debug.Log ("Error at" + tileIndex / NodeGenerator.COLS + ", " + tileIndex % NodeGenerator.COLS);
 		}
-		GetNode().SetState (Node.STATE.DESTROYED);
+		GetNode ().SetState (Node.STATE.DESTROYED);
 	}
 
-	public override string ToString () {
+	public override string ToString ()
+	{
 		return "r : " + tileIndex / NodeGenerator.COLS + ", c : " + tileIndex % NodeGenerator.COLS + " id : " + tileIndex;
 	}
-	public bool IsActiveNode() {
-		return GetNode().GetState () == Node.STATE.ACTIVE;
+
+	public bool IsActiveNode ()
+	{
+		return GetNode ().GetState () == Node.STATE.ACTIVE;
 	}
 }
