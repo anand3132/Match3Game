@@ -11,19 +11,16 @@ public class NodeGenerator : MonoBehaviour
 	public GameObject pockets;
 	public const int ROWS = 8;
 	public const int COLS = 8;
-	public int regenerateCount = 0;
 	public NodePocket pickedPocket1 = null;
 	public NodePocket pickedPocket2 = null;
 
-	//	public List<NodePocket> tempListForDebug = new List<NodePocket> ();
 	public List<NodePocket> northSouthListA = new List<NodePocket> ();
 	public List<NodePocket> eastWestListA = new List<NodePocket> ();
 	public List<NodePocket> northSouthListB = new List<NodePocket> ();
 	public List<NodePocket> eastWestListB = new List<NodePocket> ();
 	public List<NodePocket> destructionList = new List<NodePocket> ();
-	public List<NodePocket> regenerateList = new List<NodePocket> ();
-
 	public List<NodePocket> dropAnimationList = new List<NodePocket> ();
+	public List<NodePocket> newGenerationFallAnimationList = new List<NodePocket> ();
 
 	Node.TYPE[] presetTypes = {
 		Node.TYPE.NODE_0,
@@ -43,6 +40,11 @@ public class NodeGenerator : MonoBehaviour
 
 	public void Reset ()
 	{
+		if (dropAnimationList.Count > 0 || newGenerationFallAnimationList.Count > 0) {
+			Debug.LogWarning ("RESET Can't be done since some drop/fall animations are pending !!!");
+			return;
+		}
+
 		Node[] nodes = pockets.GetComponentsInChildren <Node> ();
 		foreach (Node n in nodes) {
 			n.transform.SetParent (null);
@@ -71,20 +73,6 @@ public class NodeGenerator : MonoBehaviour
 			// Pocket positioning
 			// This has to come after we made the node a child. Else the child node won't position properly.
 			p.transform.position = oldPos;
-		}
-	}
-
-	void GenerateNodeFromGenerateList ()
-	{
-		foreach (NodePocket p in regenerateList) {
-			NodePocket NorthMostPocket = GetNorthTip (p);
-			if (NorthMostPocket.north == null) {
-				Node generateNode = NorthMostPocket.GetNode ();
-				int randIndex = Random.Range (0, presetTypes.Length);
-				generateNode.SetNodeType (presetTypes [randIndex]);
-				generateNode.SetDebugColor (Color.yellow);
-				generateNode.SetState (Node.STATE.ACTIVE);
-			}
 		}
 	}
 
@@ -279,14 +267,101 @@ public class NodeGenerator : MonoBehaviour
 		if (list.Count == 2) {
 			dropAnimationList.Remove (list [0]);
 			NodePocket.SwapNodes (list [0], list [1]);
-			if (dropAnimationList.Count == 0) {
-				DoNextMatch ();
+			if (dropAnimationList.Count == 0 && newGenerationFallAnimationList.Count == 0) {
+				DoFallDown ();
+
+				// if no new Fall generation node created, start the next match logic.
+				if (newGenerationFallAnimationList.Count == 0) {
+					DoNextMatch ();
+				}
 			}
+		}
+	}
+
+	private void DoFallDown ()
+	{
+		// Do the fall animation if there is no drop down animation.
+		int itr = COLS;
+		NodePocket[] childpockets = pockets.GetComponentsInChildren <NodePocket> ();
+		NodePocket[] topSockets = new NodePocket[COLS];
+		foreach (NodePocket p in childpockets) {
+			topSockets [p.tileIndex % COLS] = p;
+			itr--;
+			if (itr == 0) {
+				break;
+			}
+		}
+		foreach (NodePocket p in topSockets) {
+			DoFallDownAnimation (p);
+		}
+	}
+
+	private void DoFallDownAnimation (NodePocket pocket)
+	{
+		if (pocket) {
+			Debug.LogWarning ("Fall initiated by r : " + pocket.tileIndex / COLS + " c : " + pocket.tileIndex % COLS);
+		}
+
+		// generate new nodes
+		// store the destroyed pockets so that we can generate as new nodes
+		NodePocket destroyedNorth = GetFirstNorthDestroyedPocket (pocket);
+		if (destroyedNorth == null) {
+			return;
+		}
+		if (destroyedNorth == null) {
+			Debug.LogWarning ("destroyedNorth == null");
+		} else {
+			Debug.LogWarning ("Fall started at r : " + destroyedNorth.tileIndex / COLS + " c : " + destroyedNorth.tileIndex % COLS);
+		}
+		float boundSz = 0;
+		if (destroyedNorth) {
+			boundSz = destroyedNorth.gameObject.GetComponent<BoxCollider2D> ().bounds.size.y;
+		}
+		int startYPos = (int)boundSz * ROWS;
+		int itr = 0;
+		while (destroyedNorth) {
+			Node node = destroyedNorth.GetNode ();
+			Vector3 currentPos = node.transform.position;
+			node.SetState (Node.STATE.ACTIVE);
+			int randIndex = Random.Range (0, presetTypes.Length);
+			node.SetNodeType (presetTypes [randIndex]);
+
+			// set the new position
+			destroyedNorth.GetNode ().transform.position = new Vector3 (currentPos.x, startYPos + itr * (int)boundSz, currentPos.z);
+			newGenerationFallAnimationList.Add (destroyedNorth);
+			// start the animation for falling
+			iTween.MoveTo (destroyedNorth.GetNode ().gameObject, 
+				iTween.Hash (
+					"y", currentPos.y,
+					"time", 0.2f,
+					"oncomplete", "CallbackFallDownAnimComplete",
+					"onCompleteParams", destroyedNorth,
+					"oncompletetarget", this.gameObject
+				));
+			destroyedNorth = destroyedNorth.north;
+			itr++;
+		}
+
+		if (itr > 0) {
+			Debug.LogWarning ("Fall happened for " + itr);
+		}
+	}
+
+	public void CallbackFallDownAnimComplete (object pocket)
+	{
+		NodePocket p = (NodePocket)pocket;
+		newGenerationFallAnimationList.Remove (p);
+		if (newGenerationFallAnimationList.Count == 0) {
+			DoNextMatch ();
 		}
 	}
 
 	bool DoNextMatch ()
 	{
+		if (dropAnimationList.Count > 0 || newGenerationFallAnimationList.Count > 0) {
+			Debug.LogError ("dropAnimationList.Count>0 ||newGenerationFallAnimationList.Count>0 : " +
+			dropAnimationList.Count + ", " + newGenerationFallAnimationList.Count);
+		}
 		int nDestruction = 0;
 		NodePocket[] nodePockets = pockets.GetComponentsInChildren <NodePocket> ();
 		foreach (NodePocket p in nodePockets) {
@@ -299,7 +374,7 @@ public class NodeGenerator : MonoBehaviour
 			ClearVisitationFlag ();
 			if (isMatchFound ()) {
 				// start destruction
-				BlinkNodes (destructionList);
+				// BlinkNodes (destructionList);
 
 				DestroyNodesFromDestructionList ();
 				nDestruction++;
@@ -309,7 +384,6 @@ public class NodeGenerator : MonoBehaviour
 		if (nDestruction == 0) {
 			// allow mouse input.
 			Debug.LogWarning ("No Match found");
-			Debug.Log (regenerateCount);
 		}
 		return nDestruction > 0;
 	}
@@ -372,6 +446,22 @@ public class NodeGenerator : MonoBehaviour
 		return nodePocket;
 	}
 
+	NodePocket GetFirstNorthDestroyedPocket (NodePocket nodePocket)
+	{
+		if (nodePocket && nodePocket.GetNode ().GetState () == Node.STATE.DESTROYED) {
+			return nodePocket;
+		}
+
+		while (nodePocket && nodePocket.north != null) {
+			if (nodePocket.north.GetNode ().GetState () == Node.STATE.DESTROYED) {
+				return nodePocket.north;
+			}
+			nodePocket = nodePocket.north;
+		}
+
+		return null;
+	}
+
 	void TryDropDown (NodePocket nodePocket)
 	{
 		NodePocket southNodePocket = nodePocket.south;
@@ -408,7 +498,7 @@ public class NodeGenerator : MonoBehaviour
 				iTween.MoveTo (nodePocket.GetNode ().gameObject, 
 					iTween.Hash (
 						"y", yPos,
-						"time", 1.0f,
+						"time", 0.5f,
 						"oncomplete", "CallbackDropDownAnimComplete",
 						"onCompleteParams", list,
 						"oncompletetarget", this.gameObject
@@ -419,8 +509,6 @@ public class NodeGenerator : MonoBehaviour
 			southTip = southTip.north;
 			nodePocket = nodePocket.north;
 		}
-		//generate node here
-		//GenerateNode (GetNorthTip (nodePocket));
 
 		if (dropAnimationList.Count > 0) {
 			Debug.Log ("Start drop animation " + dropAnimationList.Count);
@@ -433,8 +521,6 @@ public class NodeGenerator : MonoBehaviour
 	void DestroyNodesFromDestructionList ()
 	{
 		Debug.Log ("Start destruction " + destructionList.Count);
-		regenerateCount += destructionList.Count;
-		regenerateList.AddRange (destructionList);
 		foreach (NodePocket p in destructionList) {
 			p.DestroyNode ();
 		}
@@ -455,10 +541,9 @@ public class NodeGenerator : MonoBehaviour
 		}
 
 		if (destructionList.Count > 0 && !bTryDropAtleastOne) {
-			// start the check again
-			DoNextMatch ();
+			// Do the fall animation if there is no drop down animation.
+			DoFallDown ();
 		}
-		// GenerateNodeFromGenerateList ();
 	}
 
 	void ClearArrays ()
@@ -502,22 +587,22 @@ public class NodeGenerator : MonoBehaviour
 	{
 		bool MatchFound = false;
 		if (northSouthListA.Count >= 3) {
-			ChangeColor (northSouthListA, Color.yellow);
+			// ChangeColor (northSouthListA, Color.yellow);
 			destructionList.AddRange (northSouthListA);
 			MatchFound = true;
 		}
 		if (eastWestListA.Count >= 3) {
-			ChangeColor (eastWestListA, Color.yellow);
+			// ChangeColor (eastWestListA, Color.yellow);
 			destructionList.AddRange (eastWestListA);
 			MatchFound = true;
 		}
 		if (northSouthListB.Count >= 3) {
-			ChangeColor (northSouthListB, Color.yellow);
+			// ChangeColor (northSouthListB, Color.yellow);
 			destructionList.AddRange (northSouthListB);
 			MatchFound = true;
 		}
 		if (eastWestListB.Count >= 3) {
-			ChangeColor (eastWestListB, Color.yellow);
+			// ChangeColor (eastWestListB, Color.yellow);
 			destructionList.AddRange (eastWestListB);
 			MatchFound = true;
 		}
