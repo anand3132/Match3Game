@@ -83,7 +83,8 @@ public class NodeGenerator : MonoBehaviour
 				// Pocket creation
 				GameObject pocket = (GameObject)Instantiate (nodePocket);
 				Bounds bounds = pocket.GetComponent<BoxCollider2D> ().bounds;
-				pocket.GetComponent<NodePocket> ().SetColor (new Color (0.3f, 0.3f, 0.3f, 0.3f));
+				pocket.GetComponent<NodePocket> ().SetColor (
+					new Color (120.0f / 255.0f, 93.0f / 255.0f, 10.0f / 255.0f, 1.0f));
 				pocket.transform.position = Vector3.zero;	// This is a must else the child node won't position properly.
 
 				// Node creation
