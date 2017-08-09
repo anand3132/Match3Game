@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿//#define AUTOMATED_TEST
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
@@ -385,6 +386,9 @@ public class NodeGenerator : MonoBehaviour
 		if (nDestruction == 0) {
 			// allow mouse input.
 			Debug.LogWarning ("No Match found");
+#if AUTOMATED_TEST
+			Reset ();
+#endif
 		}
 		return nDestruction > 0;
 	}
