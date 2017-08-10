@@ -11,7 +11,6 @@ public class UIController : MonoBehaviour {
 	public Text scoreBoard;
 	public int score;
 	public NodeGenerator nodeGenerator;
-
 	// Use this for initialization
 	void Start () {
 		score = 0;
@@ -36,6 +35,7 @@ public class UIController : MonoBehaviour {
 		menueButton.SetActive (true);
 		resetButton.SetActive (true);
 		scoreBoard.text = score.ToString ();
+		nodeGenerator.StartGame();
 	} 
 	public void ResetGame() {
 		nodeGenerator.Reset ();

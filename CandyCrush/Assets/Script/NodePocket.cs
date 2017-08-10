@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#define DEBUG_ON
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
@@ -120,12 +121,13 @@ public class NodePocket : MonoBehaviour
 		if (!dontChangeTransform) {
 			node1.transform.localPosition = Vector3.zero;
 		}
-
-		a.CalculateDebugText ();
-		b.CalculateDebugText ();
+#if DEBUG_ON
+		a.DebugCalculateText ();
+		b.DebugCalculateText ();
+#endif
 	}
-
-	public void CalculateDebugText ()
+#if DEBUG_ON
+	public void DebugCalculateText ()
 	{
 		int row = tileIndex / NodeGenerator.COLS;
 		int col = tileIndex % NodeGenerator.COLS;
@@ -133,7 +135,7 @@ public class NodePocket : MonoBehaviour
 		GameObject textParent = node.gameObject.transform.GetChild (0).gameObject;
 		textParent.GetComponent<TextMeshPro> ().text = "" + row + "," + col;
 	}
-
+#endif
 	public void DestroyNode ()
 	{
 		if (GetNode () == null) {
